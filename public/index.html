@@ -530,7 +530,43 @@ async function init() {
   }
 }
 
-init();
-</script>
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  const state  = params.get('state');
+
+  // Restore setup fields from last session
+  if (load('jb_client_id'))    $('client-id').value    = load('jb_client_id');
+  if (load('jb_redirect_uri')) $('redirect-uri').value = load('jb_redirect_uri');
+  if (load('jb_netlify_url'))  $('netlify-url').value  = load('jb_netlify_url');
+
+  // OAuth callback
+  if (code) {
+    $('setup-card').style.display    = 'none';
+    $('callback-card').style.display = 'block';
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (state !== load('jb_oauth_state')) {
+      $('callback-msg').textContent = '⚠ State mismatch. Please try connecting again.';
+      return;
+    }
+
+    try {
+      await exchangeCode(code);
+      $('callback-msg').innerHTML = '<span class="spinner"></span>Fetching your Jobber data…';
+      const d = await fetchAll();
+      window._DATA = d;
+      $('callback-card').style.display = 'none';
+      renderAll(d);
+    } catch(e) {
+      $('callback-msg').textContent = '⚠ ' + e.message;
+      $('callback-card').style.display = 'block';
+    }
+    return;
+  }
+
+  // Always show setup form — never auto-load from saved token
+  $('setup-card').style.display = 'block';
+}</script>
 </body>
 </html>
