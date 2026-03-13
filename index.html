@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jobber Dashboard</title>
+<style>
+  :root {
+    --bg:       #f5f4f1;
+    --surface:  #ffffff;
+    --surface2: #f0efe9;
+    --border:   rgba(0,0,0,0.1);
+    --text:     #1a1a18;
+    --muted:    #6b6a64;
+    --accent:   #FF6B2B;
+    --green:    #2d6a1f;
+    --green-bg: #eaf3de;
+    --red:      #a32d2d;
+    --radius:   10px;
+    --radius-lg:14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:       #1a1a18;
+      --surface:  #242422;
+      --surface2: #2e2e2b;
+      --border:   rgba(255,255,255,0.1);
+      --text:     #e8e7e0;
+      --muted:    #9c9a92;
+      --green:    #8bc34a;
+      --green-bg: #1a2e0a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+  /* Header */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 12px; }
+  .logo-row { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 36px; height: 36px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .logo svg { width: 20px; height: 20px; fill: #fff; }
+  h1 { font-size: 20px; font-weight: 600; }
+  .tagline { font-size: 13px; color: var(--muted); }
+  .btn { padding: 7px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+  .btn-primary:hover { background: #e55a1f; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Status */
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--surface2); border-radius: 99px; padding: 4px 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+  .dot.green { background: #3b6d11; }
+  .dot.orange { background: var(--accent); }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 1rem; }
+
+  /* Setup */
+  .setup-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .setup-field label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .setup-field input { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); font-size: 14px; width: 100%; }
+  .setup-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .error { background: #fce8e8; color: var(--red); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; margin-top: 10px; }
+
+  /* Metrics grid */
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; }
+  .metrics { display: grid; gap: 10px; margin-bottom: 10px; }
+  .m3 { grid-template-columns: repeat(3, 1fr); }
+  .m4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 620px) { .m3, .m4 { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: var(--surface2); border-radius: var(--radius); padding: 14px 16px; }
+  .metric-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1.1; }
+  .metric-value.green { color: var(--green); }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* Bar chart */
+  .bar-section { margin-top: 1rem; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+  .bar-label { width: 72px; color: var(--muted); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 5px; height: 24px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; transition: width 0.7s ease; min-width: 0; }
+  .bar-fill.green { background: #3b6d11; }
+  .bar-val { font-size: 11px; color: #fff; font-weight: 600; white-space: nowrap; }
+  .bar-val-out { font-size: 11px; color: var(--muted); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #data-area { display: none; }
+
+  /* Step guide */
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 14px; margin-bottom: 1rem; }
+  .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-body { flex: 1; }
+  .step-body strong { font-size: 14px; }
+  .step-body p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  code { font-family: monospace; background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="top-bar">
+    <div class="logo-row">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4 6v12l8 4 8-4V6L12 2zm0 2.5l5.5 2.75v8.5L12 18.5l-5.5-2.75v-8.5L12 4.5z"/></svg>
+      </div>
+      <div>
+        <h1>Jobber Dashboard</h1>
+        <div class="tagline">Visits · Invoices · Quotes</div>
+      </div>
+    </div>
+    <div class="btn-row" id="top-actions" style="display:none">
+      <span class="status-pill"><span class="dot green" id="conn-dot"></span><span id="last-updated">Connected</span></span>
+      <button class="btn btn-sm" onclick="refreshData()">↻ Refresh</button>
+      <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- SETUP CARD -->
+  <div class="card" id="setup-card">
+    <div class="card-title">Connect your Jobber account</div>
+    <div class="setup-field">
+      <label>CLIENT ID</label>
+      <input type="text" id="client-id" placeholder="Paste your Jobber Client ID" autocomplete="off"/>
+    </div>
+    <div class="setup-field">
+      <label>REDIRECT URI</label>
+      <input type="text" id="redirect-uri" placeholder="e.g. https://your-site.netlify.app/callback" autocomplete="off"/>
+      <span class="hint">This must exactly match what you set in your Jobber app settings. After deploying to Netlify, it will be <code>https://YOUR-SITE.netlify.app/callback</code></span>
+    </div>
+    <div class="setup-field">
+      <label>NETLIFY SITE URL (where you deployed this dashboard)</label>
+      <input type="text" id="netlify-url" placeholder="https://your-site.netlify.app" autocomplete="off"/>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-primary" onclick="startOAuth()">Connect to Jobber →</button>
+    </div>
+    <div id="setup-error" style="display:none" class="error"></div>
+    <div class="hint" style="margin-top:14px;">
+      Your Client Secret is stored securely in Netlify — it never touches this page.
+    </div>
+  </div>
+
+  <!-- CALLBACK HANDLER (shown after OAuth redirect) -->
+  <div class="card" id="callback-card" style="display:none">
+    <div class="card-title">Connecting to Jobber…</div>
+    <p style="font-size:14px;color:var(--muted);" id="callback-msg"><span class="spinner"></span>Exchanging authorization code…</p>
+  </div>
+
+  <!-- MAIN DATA -->
+  <div id="data-area">
+
+    <!-- VISITS -->
+    <div class="section-label">Visits — next 4 months</div>
+    <div class="metrics m4" id="visits-metrics"></div>
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        Monthly revenue <span id="visits-total" style="font-size:13px;font-weight:400;color:var(--muted);"></span>
+      </div>
+      <div id="visits-bars"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- INVOICES -->
+    <div class="section-label">Invoices</div>
+    <div class="metrics m3" id="invoice-metrics"></div>
+
+    <div class="divider"></div>
+
+    <!-- QUOTES -->
+    <div class="section-label">Quotes</div>
+    <div class="metrics m3" id="quotes-metrics-top" style="margin-bottom:10px;"></div>
+    <div class="metrics m3" id="quotes-metrics-bottom"></div>
+    <div class="card" style="margin-top:10px;">
+      <div class="card-title">Quote status breakdown</div>
+      <div id="quotes-bars"></div>
+    </div>
+
+  </div><!-- /data-area -->
+
+</div><!-- /wrap -->
+
+<script>
+// ─── Helpers ───────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt  = n => '$' + Math.round(n).toLocaleString();
+const fmtK = n => n >= 1000 ? '$' + (n/1000).toFixed(1) + 'k' : fmt(n);
+const today    = () => new Date().toISOString().slice(0,10);
+const daysAgo  = d => { let dt = new Date(); dt.setDate(dt.getDate()-d); return dt.toISOString().slice(0,10); };
+const monthLabel = offset => { let d = new Date(); d.setMonth(d.getMonth()+offset); return d.toLocaleString('default',{month:'short', year:'2-digit'}); };
+
+function save(k,v) { try { localStorage.setItem(k,v); } catch{} }
+function load(k)   { try { return localStorage.getItem(k); } catch { return null; } }
+
+// ─── OAuth ─────────────────────────────────────────────────────
+function startOAuth() {
+  const clientId    = $('client-id').value.trim();
+  const redirectUri = $('redirect-uri').value.trim();
+  const netlifyUrl  = $('netlify-url').value.trim().replace(/\/$/,'');
+
+  if (!clientId || !redirectUri || !netlifyUrl) {
+    showSetupError('Please fill in all three fields.');
+    return;
+  }
+
+  save('jb_client_id',   clientId);
+  save('jb_redirect_uri', redirectUri);
+  save('jb_netlify_url',  netlifyUrl);
+
+  const state = Math.random().toString(36).slice(2);
+  save('jb_oauth_state', state);
+
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  redirectUri,
+    response_type: 'code',
+    state,
+  });
+
+  window.location.href = 'https://api.getjobber.com/api/oauth/authorize?' + params.toString();
+}
+
+function showSetupError(msg) {
+  $('setup-error').textContent = msg;
+  $('setup-error').style.display = 'block';
+}
+
+// ─── Token management ──────────────────────────────────────────
+async function exchangeCode(code) {
+  const netlifyUrl  = load('jb_netlify_url');
+  const redirectUri = load('jb_redirect_uri');
+  const res = await fetch(netlifyUrl + '/.netlify/functions/jobber-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grant_type: 'authorization_code', code, redirect_uri: redirectUri }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Token exchange failed');
+  storeTokens(data);
+  return data.access_token;
+}
+
+async function refreshAccessToken() {
+  const rt = load('jb_refresh_token');
+  if (!rt) throw new Error('No refresh token. Please reconnect.');
+  const netlifyUrl = load('jb_netlify_url');
+  const res = await fetch(netlifyUrl + '/.netlify/functions/jobber-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: rt }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Token refresh failed');
+  storeTokens(data);
+  return data.access_token;
+}
+
+function storeTokens(data) {
+  save('jb_access_token',  data.access_token);
+  save('jb_refresh_token', data.refresh_token);
+  save('jb_token_expiry',  Date.now() + (data.expires_in - 60) * 1000);
+}
+
+async function getToken() {
+  const expiry = parseInt(load('jb_token_expiry') || '0');
+  if (Date.now() < expiry) return load('jb_access_token');
+  return await refreshAccessToken();
+}
+
+// ─── GraphQL ───────────────────────────────────────────────────
+async function gql(query) {
+  const token      = await getToken();
+  const netlifyUrl = load('jb_netlify_url');
+  const res = await fetch(netlifyUrl + '/.netlify/functions/jobber-gql', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body:    JSON.stringify({ query }),
+  });
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  return json.data;
+}
+
+// ─── Queries ───────────────────────────────────────────────────
+function buildQueries() {
+  const now    = today();
+  const m4     = (() => { let d = new Date(); d.setMonth(d.getMonth()+4); return d.toISOString().slice(0,10); })();
+  const d30    = daysAgo(30);
+  const d7     = daysAgo(7);
+
+  const VISITS = `query {
+    visits(filter: { startAt: { greaterThanOrEqualTo: "${now}", lessThan: "${m4}" } }) {
+      nodes { id startAt job { title invoiceAmount } }
+      totalCount
+    }
+  }`;
+
+  const INVOICES = `query {
+    invoices(filter: { createdAt: { greaterThanOrEqualTo: "${d30}" } }) {
+      nodes { id total createdAt status }
+      totalCount
+    }
+  }`;
+
+  const QUOTES = `query {
+    quotes(filter: { createdAt: { greaterThanOrEqualTo: "${d30}" } }) {
+      nodes { id title total status createdAt job { invoiceAmount } }
+      totalCount
+    }
+  }`;
+
+  return { VISITS, INVOICES, QUOTES, now, d7 };
+}
+
+// ─── Fetch + process ───────────────────────────────────────────
+async function fetchAll() {
+  const { VISITS, INVOICES, QUOTES, now, d7 } = buildQueries();
+  const [v, inv, q] = await Promise.all([gql(VISITS), gql(INVOICES), gql(QUOTES)]);
+  return processData(v, inv, q, now, d7);
+}
+
+function processData(v, inv, q, todayStr, weekAgo) {
+  const curMonth = new Date().getMonth();
+  const curYear  = new Date().getFullYear();
+
+  // Visits → bucket by month offset 0-3
+  const months = [0,1,2,3].map(i => ({ label: monthLabel(i), revenue: 0, count: 0 }));
+  (v?.visits?.nodes || []).forEach(vs => {
+    const d    = new Date(vs.startAt);
+    const diff = (d.getFullYear() - curYear) * 12 + d.getMonth() - curMonth;
+    if (diff >= 0 && diff < 4) {
+      months[diff].count++;
+      months[diff].revenue += parseFloat(vs.job?.invoiceAmount || 0);
+    }
+  });
+
+  // Invoices
+  const allInv   = inv?.invoices?.nodes || [];
+  const todayInv = allInv.filter(i => i.createdAt?.slice(0,10) === todayStr);
+  const last30Rev = allInv.reduce((s,i) => s + parseFloat(i.total||0), 0);
+
+  // Quotes
+  const allQ      = q?.quotes?.nodes || [];
+  const todayQ    = allQ.filter(x => x.createdAt?.slice(0,10) === todayStr);
+  const weekQ     = allQ.filter(x => x.createdAt?.slice(0,10) >= weekAgo);
+  const accepted  = allQ.filter(x => ['APPROVED','CONVERTED'].includes(x.status));
+  const avgQuote  = allQ.length ? allQ.reduce((s,x)=>s+parseFloat(x.total||0),0)/allQ.length : 0;
+  const acceptedRev = accepted.reduce((s,x)=>s+parseFloat(x.job?.invoiceAmount||x.total||0),0);
+  const pending   = allQ.filter(x=>['DRAFT','SENT','VIEWED'].includes(x.status)).length;
+
+  return { months, allInv, todayInv, last30Rev, allQ, todayQ, weekQ, accepted, avgQuote, acceptedRev, pending };
+}
+
+// ─── Render ────────────────────────────────────────────────────
+function renderAll(d) {
+  // Visits
+  $('visits-metrics').innerHTML = d.months.map(m => `
+    <div class="metric">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value">${fmtK(m.revenue)}</div>
+      <div class="metric-sub">${m.count} visit${m.count!==1?'s':''}</div>
+    </div>`).join('');
+  $('visits-total').textContent = 'Total: ' + fmt(d.months.reduce((s,m)=>s+m.revenue,0));
+  const maxRev = Math.max(...d.months.map(m=>m.revenue), 1);
+  $('visits-bars').innerHTML = d.months.map(m => {
+    const pct = Math.round(m.revenue/maxRev*100);
+    return `<div class="bar-row">
+      <div class="bar-label">${m.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"><span class="bar-val">${fmtK(m.revenue)}</span></div></div>
+      <span class="bar-val-out">${m.count}v</span></div>`;
+  }).join('');
+
+  // Invoices
+  const avgInv = d.allInv.length ? d.last30Rev/d.allInv.length : 0;
+  $('invoice-metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Invoices sent today</div>
+      <div class="metric-value">${d.todayInv.length}</div>
+      <div class="metric-sub">${fmtK(d.todayInv.reduce((s,i)=>s+parseFloat(i.total||0),0))} value</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Invoiced (last 30 days)</div>
+      <div class="metric-value green">${fmt(d.last30Rev)}</div>
+      <div class="metric-sub">${d.allInv.length} invoice${d.allInv.length!==1?'s':''}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Average invoice</div>
+      <div class="metric-value">${fmtK(avgInv)}</div>
+      <div class="metric-sub">30-day average</div>
+    </div>`;
+
+  // Quotes top row
+  $('quotes-metrics-top').innerHTML = `
+    <div class="metric"><div class="metric-label">Quotes today</div><div class="metric-value">${d.todayQ.length}</div></div>
+    <div class="metric"><div class="metric-label">Quotes this week</div><div class="metric-value">${d.weekQ.length}</div></div>
+    <div class="metric"><div class="metric-label">Quotes (last 30d)</div><div class="metric-value">${d.allQ.length}</div></div>`;
+  // Quotes bottom row
+  const acceptRate = d.allQ.length ? Math.round(d.accepted.length/d.allQ.length*100) : 0;
+  $('quotes-metrics-bottom').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Average quote</div>
+      <div class="metric-value">${fmtK(d.avgQuote)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Accepted quotes</div>
+      <div class="metric-value green">${d.accepted.length}</div>
+      <div class="metric-sub">${acceptRate}% acceptance rate</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Accepted revenue</div>
+      <div class="metric-value green">${fmt(d.acceptedRev)}</div>
+      <div class="metric-sub">from accepted jobs</div>
+    </div>`;
+
+  // Quotes bar chart
+  const other = d.allQ.length - d.accepted.length - d.pending;
+  const maxQ  = Math.max(d.accepted.length, d.pending, other, 1);
+  $('quotes-bars').innerHTML = [
+    { label:'Accepted', val: d.accepted.length, cls: 'green' },
+    { label:'Pending',  val: d.pending,           cls: ''      },
+    { label:'Other',    val: other,                cls: ''      },
+  ].map(r => `<div class="bar-row">
+    <div class="bar-label">${r.label}</div>
+    <div class="bar-track"><div class="bar-fill ${r.cls}" style="width:${Math.round(r.val/maxQ*100)}%"><span class="bar-val">${r.val}</span></div></div>
+  </div>`).join('');
+
+  $('data-area').style.display = 'block';
+  $('setup-card').style.display = 'none';
+  $('top-actions').style.display = 'flex';
+  $('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// ─── Refresh ───────────────────────────────────────────────────
+async function refreshData() {
+  $('last-updated').innerHTML = '<span class="spinner"></span>Refreshing…';
+  try {
+    const d = await fetchAll();
+    renderAll(d);
+  } catch(e) {
+    $('last-updated').textContent = 'Error: ' + e.message;
+  }
+}
+
+// ─── CSV Export ────────────────────────────────────────────────
+function exportCSV() {
+  if (!window._DATA) return;
+  const d = window._DATA;
+  const rows = [
+    ['Section','Metric','Value'],
+    ...d.months.map(m=>['Visits',m.label+' revenue',Math.round(m.revenue)]),
+    ...d.months.map(m=>['Visits',m.label+' count',m.count]),
+    ['Invoices','Today count',d.todayInv.length],
+    ['Invoices','Last 30d revenue',Math.round(d.last30Rev)],
+    ['Invoices','Last 30d count',d.allInv.length],
+    ['Quotes','Today',d.todayQ.length],
+    ['Quotes','This week',d.weekQ.length],
+    ['Quotes','Last 30d',d.allQ.length],
+    ['Quotes','Average quote',Math.round(d.avgQuote)],
+    ['Quotes','Accepted count',d.accepted.length],
+    ['Quotes','Accepted revenue',Math.round(d.acceptedRev)],
+  ];
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a'); 
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'jobber-' + today() + '.csv';
+  a.click();
+}
+
+// ─── Page init ─────────────────────────────────────────────────
+async function init() {
+  // Grab code IMMEDIATELY before anything can redirect
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  const state  = params.get('state');
+
+  // If we have a code, process it RIGHT AWAY before restoring any fields
+  if (code) {
+    // Strip code from URL immediately so page reload won't reuse it
+    window.history.replaceState({}, '', window.location.pathname);
+
+    $('setup-card').style.display    = 'none';
+    $('callback-card').style.display = 'block';
+    $('callback-msg').innerHTML      = '<span class="spinner"></span>Exchanging authorization code…';
+
+    try {
+      await exchangeCode(code);
+      $('callback-msg').innerHTML = '<span class="spinner"></span>Fetching your Jobber data…';
+      const d = await fetchAll();
+      window._DATA = d;
+      $('callback-card').style.display = 'none';
+      renderAll(d);
+    } catch(e) {
+      $('callback-msg').textContent = '⚠ ' + e.message;
+      $('callback-card').style.display = 'block';
+      $('setup-card').style.display    = 'block';
+    }
+    return;
+  }
+
+  // Restore setup fields from last session
+  if (load('jb_client_id'))    $('client-id').value    = load('jb_client_id');
+  if (load('jb_redirect_uri')) $('redirect-uri').value = load('jb_redirect_uri');
+  if (load('jb_netlify_url'))  $('netlify-url').value  = load('jb_netlify_url');
+
+  // Always show setup form
+  $('setup-card').style.display = 'block';
+}
+
+init();
+</script>
+</body>
+</html>
